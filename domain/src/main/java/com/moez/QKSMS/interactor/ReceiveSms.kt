@@ -81,7 +81,12 @@ class ReceiveSms @Inject constructor(
 
                 // update and fetch conversation
                 conversationRepo.updateConversations(it.threadId)
-                conversationRepo.getOrCreateConversation(it.threadId)
+                val conversation = conversationRepo.getOrCreateConversation(it.threadId)
+                val contact = contactsRepo.getContactByAddress(it.address)
+                if (prefs.autoArchiveUnknown.get() && contact == null && conversation != null && !conversation.archived) {
+                    conversationRepo.markArchived(conversation.id)
+                }
+                conversation
             }
             .mapNotNull {
                 // don't notify (continue) for blocked conversations

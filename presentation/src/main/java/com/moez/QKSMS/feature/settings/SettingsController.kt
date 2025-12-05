@@ -174,6 +174,8 @@ class SettingsController : QkController<SettingsView, SettingsState, SettingsPre
 
         unreadAtTop.checkbox.isChecked = state.unreadAtTopEnabled
 
+        autoArchiveUnknown.checkbox.isChecked = state.autoArchiveUnknownEnabled
+
         signature.summary = state.signature.takeIf { it.isNotBlank() }
                 ?: context.getString(R.string.settings_signature_summary)
 
