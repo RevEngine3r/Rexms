@@ -1,0 +1,105 @@
+name: Build Debug and Release
+
+on:
+  push:
+    branches-ignore:
+      - 'master'
+  release:
+    types: [created]
+
+jobs:
+  build-debug:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: gradle
+
+      - name: Build with Gradle
+        run: ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-debug
+          path: presentation/build/outputs/apk/debug/QUIK-v*-debug.apk
+
+  build-release:
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Validate signing configuration
+        id: signing
+        shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          missing=0
+          for var in KEYSTORE_B64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [[ -z "${!var:-}" ]]; then
+              echo "::error title=Missing secret::${var} is not set."
+              missing=1
+            fi
+          done
+          if [[ "$missing" -ne 0 ]]; then
+            exit 1
+          fi
+
+          mkdir -p presentation
+          echo "$KEYSTORE_B64" | base64 -d > presentation/my-release-key.keystore
+          chmod 600 presentation/my-release-key.keystore
+
+          {
+            echo "keystore_password=$KEYSTORE_PASSWORD"
+            echo "key_alias=$KEY_ALIAS"
+            echo "key_password=$KEY_PASSWORD"
+          } >> "$GITHUB_ENV"
+
+      - name: Build signed release APK
+        run: ./gradlew clean assembleRelease
+
+      - name: Locate release artifact
+        id: artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          files=(presentation/build/outputs/apk/release/QUIK-v*-release.apk)
+          if [[ "${#files[@]}" -ne 1 ]]; then
+            echo "::error title=APK lookup failed::Expected 1 APK, found ${#files[@]} (${files[*]:-none})."
+            exit 1
+          fi
+          echo "apk_path=${files[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ${{ steps.artifact.outputs.apk_path }}
+          asset_name: QUIK-${{ github.ref_name }}.apk
+          asset_content_type: application/vnd.android.package-archive
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
