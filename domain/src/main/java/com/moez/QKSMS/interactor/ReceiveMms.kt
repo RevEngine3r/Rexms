@@ -90,6 +90,13 @@ class ReceiveMms @Inject constructor(
                 .doOnNext { message ->
                     conversationRepo.updateConversations(message.threadId) // Update the conversation
                 }
+                .doOnNext { message ->
+                    val conversation = conversationRepo.getOrCreateConversation(message.threadId)
+                    val contact = contactsRepo.getContactByAddress(message.address)
+                    if (prefs.autoArchiveUnknown.get() && contact == null && conversation != null && !conversation.archived) {
+                        conversationRepo.markArchived(conversation.id)
+                    }
+                }
                 .mapNotNull { message ->
                     conversationRepo.getOrCreateConversation(message.threadId) // Map message to conversation
                 }

@@ -62,6 +62,15 @@
             app:widget="@layout/settings_switch_widget" />
 
         <dev.octoshrimpy.quik.common.widget.PreferenceView
+            android:id="@+id/autoArchiveUnknown"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:icon="@drawable/ic_archive_black_24dp"
+            app:summary="@string/settings_auto_archive_unknown_summary"
+            app:title="@string/settings_auto_archive_unknown_title"
+            app:widget="@layout/settings_switch_widget" />
+
+        <dev.octoshrimpy.quik.common.widget.PreferenceView
             android:id="@+id/nightStart"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
