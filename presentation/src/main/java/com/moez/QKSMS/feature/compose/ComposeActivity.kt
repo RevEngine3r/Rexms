@@ -60,6 +60,7 @@ import com.moez.QKSMS.common.QkMediaPlayer
 import com.uber.autodispose.ObservableSubscribeProxy
 import com.uber.autodispose.android.lifecycle.scope
 import com.uber.autodispose.autoDisposable
+import com.moez.QKSMS.ui.MessageDetailsDialogFragment
 import dagger.android.AndroidInjection
 import dev.octoshrimpy.quik.R
 import dev.octoshrimpy.quik.common.Navigator
@@ -592,11 +593,8 @@ class ComposeActivity : QkThemedActivity(), ComposeView {
     }
 
     override fun showDetails(details: String) {
-        AlertDialog.Builder(this)
-            .setTitle(R.string.compose_details_title)
-            .setMessage(details)
-            .setCancelable(true)
-            .show()
+        val dialog = MessageDetailsDialogFragment.newInstance(details)
+        dialog.show(supportFragmentManager, "MessageDetailsDialogFragment")
     }
 
     override fun showMessageLinkAskDialog(uri: Uri) {
